@@ -62,6 +62,7 @@ hermes-agent-XXXX           Vars env: token, URL            openclaw-XXXX
                                       │
                                       ▼
                          systemd service (persistance 24/7)
+                         
 Composants détaillés
 Composant
 Rôle
