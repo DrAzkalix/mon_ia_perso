@@ -2,8 +2,8 @@
 Markdown View 
 AA
 moniaperso
-Projet IA personnel — Infrastructure multi-agents (Hermes + OpenClaw) + journal de bord + future formation SaaS
-[]() []()
+🤖 Infrastructure multi-agents IA — Hermes + OpenClaw + journal de bord + future formation SaaS
+   
 
 📋 Table des matières
 À propos
@@ -13,142 +13,197 @@ Documentation
 Journal de bord
 Roadmap
 Contribuer
+Ressources
 Licence
 
-À propos
+🎯 À propos
 Ce projet documente la construction d'une infrastructure multi-agents IA sur VPS Hostinger, permettant à un agent principal (Hermes) de collaborer avec des sous-agents spécialisés (OpenClaw, et bientôt d'autres).
 Objectifs
-Infrastructure de production — Agents IA communicants via le protocole MCP
-Journal de formation — Documentation détaillée de chaque session d'apprentissage
-Base pour un SaaS — Fondations pour une future plateforme de formation IA
+🏗️ Infrastructure de production — Agents IA communicants via le protocole MCP
+📓 Journal de formation — Documentation détaillée de chaque session d'apprentissage
+🎓 Base pour un SaaS — Fondations pour une future plateforme de formation IA
 Stack technique
-Hermes Agent (ChatGPT Codex) — Agent principal
-OpenClaw (Claude Sonnet 4.6) — Sous-agent spécialisé marketing
-MCP (Model Context Protocol) — Communication inter-agents
-Docker — Conteneurisation
-systemd — Persistance et supervision
-Python — Bridge MCP ↔ HTTP
+Composant
+Rôle
+Technologie
+Hermes Agent
+Agent principal
+ChatGPT Codex
+OpenClaw (Alex)
+Sous-agent spécialisé marketing
+Claude Sonnet 4.6
+MCP
+Protocole inter-agents
+Model Context Protocol
+Docker
+Conteneurisation
+Docker + Docker Compose
+systemd
+Persistance et supervision
+systemd services
+Bridge Python
+Traducteur MCP ↔ HTTP
+Python 3.11 + mcp SDK
 
-Architecture
+🏗️ Architecture
 Vue d'ensemble
 ┌─────────────┐                ┌──────────────┐                ┌─────────────┐
 │   HERMES    │─── MCP stdio ──│ Bridge Python│─── HTTP POST ──│  OPENCLAW   │
 │  (Codex)    │                │  traducteur  │                │   (Alex)    │
 └─────────────┘                └──────────────┘                └─────────────┘
-       ↓                               ↓                               ↓
+       │                              │                               │
+       ▼                              ▼                               ▼
 Container Docker            /opt/data/*.py + *.sh          Container Docker
-hermes-agent-XXXX           Vars env: token, URL           openclaw-XXXX
-       ↓                               ↓                               ↓
-Réseau bridge partagé ────────────────┼────────────────────────────────┘
-(hermes-openclaw-bridge)              │
-                                      ↓
+hermes-agent-XXXX           Vars env: token, URL            openclaw-XXXX
+       │                                                            │
+       └──────────────── hermes-openclaw-bridge ────────────────────┘
+                           (réseau Docker partagé)
+                                      │
+                                      ▼
                             socat (relais TCP)
                          Port 18790 → 18789 (loopback)
-                                      ↓
-                         systemd service (persistance)
-Composants
+                                      │
+                                      ▼
+                         systemd service (persistance 24/7)
+Composants détaillés
 Composant
 Rôle
-Technologie
+Emplacement
 Hermes
-Agent principal qui reçoit les demandes utilisateur
-ChatGPT Codex (conteneur Docker)
-OpenClaw
-Sous-agent spécialisé marketing (Alex)
-Claude Sonnet 4.6 (conteneur Docker)
-Bridge MCP
+Reçoit les demandes utilisateur, utilise MCP
+Container hermes-agent-XXXX
+Bridge Python
 Traduit MCP (stdio) ↔ HTTP OpenAI-compatible
-Python (mcp SDK + httpx)
+/opt/data/openclaw_bridge.py
+Wrapper Shell
+Injecte les variables d'environnement
+/opt/data/openclaw_bridge.sh
 socat
-Relais TCP pour exposer OpenClaw sur le réseau
-Installé via Homebrew dans OpenClaw
+Relais TCP (18790 public → 18789 loopback)
+Installé via brew dans OpenClaw
+OpenClaw (Alex)
+Sous-agent spécialisé
+Container openclaw-XXXX
 systemd
-Gardien qui relance socat automatiquement
-Service systemd sur l'hôte VPS
-Réseau Docker
-Pont réseau partagé entre les conteneurs
-hermes-openclaw-bridge
+Gardien qui relance socat en cas de crash
+/etc/systemd/system/
+Flux d'une requête
+1. L'utilisateur écrit à Hermes
+2. Hermes décide d'utiliser openclaw:ask ou openclaw:delegate
+3. Hermes lance le bridge Python via MCP stdio
+4. Le bridge fait un POST HTTP vers VOTRE_OPENCLAW:18790
+5. socat relaie vers le port 18789 (loopback OpenClaw)
+6. Alex (OpenClaw) traite et répond
+7. La réponse remonte par le chemin inverse
+8. L'utilisateur reçoit la réponse
 
-Installation
+🚀 Installation
 Prérequis
-VPS Hostinger avec Docker Manager
-Hermes Agent et OpenClaw déjà installés via le panel
-Token Gateway OpenClaw (bouton "Jeton de passerelle")
-Accès SSH root au VPS
-Guide complet
-Consultez le Guide d'installation complet pour une procédure pas à pas détaillée (6 étapes, ~2h30).
-Installation rapide (pour experts)
-# 1. Créer le réseau partagé
+✅ VPS Hostinger avec Docker Manager activé
+✅ Hermes Agent et OpenClaw installés via le panel
+✅ Token Gateway OpenClaw (bouton "Jeton de passerelle")
+✅ Accès SSH root au VPS
+📖 Guide complet
+Consulte le Guide d'installation complet pour une procédure pas à pas détaillée (6 étapes, ~2h30).
+Un PDF de formation (27 pages, technique + pédagogique) est également disponible.
+⚡ Installation rapide (pour experts)
+⚠️ Remplace VOTRE_HERMES, VOTRE_OPENCLAW et VOTRE_TOKEN par tes valeurs réelles.
+1. Créer le réseau Docker partagé
 docker network create hermes-openclaw-bridge
 docker network connect hermes-openclaw-bridge VOTRE_OPENCLAW
 docker network connect hermes-openclaw-bridge VOTRE_HERMES
-
-# 2. Installer socat dans OpenClaw
+2. Activer l'endpoint HTTP d'OpenClaw
 docker exec -it VOTRE_OPENCLAW bash
-brew install socat
+cp /data/.openclaw/openclaw.json /data/.openclaw/openclaw.json.bak
+cd /data/.openclaw && jq '.gateway.bind = "custom" |
+    .gateway.customBindHost = "0.0.0.0" |
+    .gateway.http.endpoints.chatCompletions.enabled = true' \
+  openclaw.json > openclaw.json.new && mv openclaw.json.new openclaw.json
 exit
-
-# 3. Installer le SDK MCP dans Hermes
-docker exec VOTRE_HERMES uv pip install --python /opt/hermes/.venv/bin/python3 mcp
-
-# 4. Créer le bridge Python et le wrapper shell
-# (Voir guide complet pour les scripts)
-
-# 5. Déclarer le serveur MCP
+docker restart VOTRE_OPENCLAW
+3. Installer socat dans OpenClaw
+docker exec -it VOTRE_OPENCLAW bash
+brew install socat   # Patience : 5-10 min (compilation openssl)
+exit
+4. Installer le SDK MCP dans Hermes
+docker exec VOTRE_HERMES \
+  uv pip install --python /opt/hermes/.venv/bin/python3 mcp
+5. Créer le bridge Python et le wrapper shell
+Voir le guide complet pour les scripts détaillés.
+6. Déclarer le serveur MCP dans Hermes
 echo "Y" | docker exec -i VOTRE_HERMES \
   /opt/hermes/.venv/bin/hermes mcp add openclaw \
   --command /opt/data/openclaw_bridge.sh
-
-# 6. Créer le service systemd
-# (Voir guide complet pour le fichier de service)
+7. Créer le service systemd (persistance)
 systemctl daemon-reload
 systemctl enable openclaw-socat-bridge.service
 systemctl start openclaw-socat-bridge.service
-Test rapide
+systemctl status openclaw-socat-bridge.service
+🧪 Test rapide
 docker exec -it VOTRE_HERMES \
   /opt/hermes/.venv/bin/hermes chat -Q \
-  -q "Utilise openclaw:ask pour demander à Alex : 'ping'."
-Résultat attendu : Alex répond "Pong" 🏓
+  -q "Utilise openclaw:ask pour demander a Alex : 'ping'."
+Résultat attendu : Alex répond Pong 🏓
 
-Documentation
+📚 Documentation
 Guides disponibles
-Guide d'installation complet (Markdown, ~8000 mots)
-PDF de formation (27 pages, technique + pédagogique)
-Structure de la documentation
-docs/
-├── guide-installation-hermes-openclaw.md   # Guide markdown pour GitHub
-├── hermes-openclaw-guide-complet.pdf       # PDF de formation complet
-└── images/                                 # Schémas d'architecture (à venir)
-Scripts et fichiers
-Tous les scripts nécessaires sont documentés dans le guide. Fichiers clés :
-openclaw_bridge.py — Bridge Python MCP ↔ HTTP
-openclaw_bridge.sh — Wrapper shell avec variables d'environnement
-openclaw-socat-bridge.service — Service systemd pour la persistance
+Fichier
+Format
+Taille
+Description
+Guide complet
+Markdown
+~17 KB
+Guide technique pour GitHub
+PDF de formation
+PDF
+27 pages
+Support de formation complet
+Structure du projet
+mon_ia_perso/
+│
+├── README.md                                      # Ce fichier
+│
+├── documents/                                     # Documentation technique
+│   ├── guide-installation-hermes-openclaw.md     # Guide markdown
+│   └── guide complet d'Hermes OpenClaw.pdf       # PDF formation (27 pages)
+│
+└── journal/                                       # Journal de bord chronologique
+    ├── CARNET_BORD_TEMPLATE.md                   # Template de journal
+    ├── LISTE DE CONTROLE_DEPLOIEMENT.md          # Checklist
+    └── hermes-openclaw-mcp/                      # Session du 22 avril 2026
+        └── 2026-04-22-installation...md
+Scripts clés (documentés dans le guide)
+openclaw_bridge.py — Bridge Python MCP ↔ HTTP (~1760 octets)
+openclaw_bridge.sh — Wrapper shell avec env vars (~220 octets)
+openclaw-socat-bridge.service — Service systemd (~675 octets)
 
-Journal de bord
-Le dossier journal/ contient les sessions d'apprentissage chronologiques :
+📓 Journal de bord
+Le dossier journal/ contient les sessions d'apprentissage chronologiques.
 Date
 Sujet
 Durée
-Fichier
+Statut
 2026-04-22
 Installation complète Hermes ↔ OpenClaw via MCP
 3h30
-2026-04-22-installation-hermes-openclaw-mcp.md
-Chaque journal contient :
-Objectifs de la session
-Étapes réalisées avec temps passé
-Points d'accrochage rencontrés et solutions
-Apprentissages techniques et pédagogiques
-Prochaines étapes envisagées
+✅ Complété
+Format de chaque journal
+Chaque entrée contient :
+🎯 Objectifs de la session
+📝 Étapes réalisées avec temps passé
+⚠️ Points d'accrochage rencontrés et solutions
+💡 Apprentissages techniques et pédagogiques
+🚀 Prochaines étapes envisagées
 
-Roadmap
+🗺️ Roadmap
 ✅ Phase 1 — Infrastructure de base (Complété)
-[x] Installation Hermes + OpenClaw sur VPS
+[x] Installation Hermes + OpenClaw sur VPS Hostinger
 [x] Connexion via MCP avec bridge Python custom
-[x] Persistance via systemd
-[x] Tests de délégation (ping, haïku, auto-présentation)
-[x] Documentation complète (guide + PDF)
+[x] Persistance via systemd (relance automatique)
+[x] Tests de délégation validés (ping, haïku, auto-présentation)
+[x] Documentation complète (guide markdown + PDF 27 pages)
+[x] Repo GitHub public avec README professionnel
 🚧 Phase 2 — Optimisation (En cours)
 [ ] Créer des skills Hermes qui délèguent automatiquement à Alex
 [ ] Ajouter un cache Redis pour éviter de refacturer les mêmes prompts
@@ -165,58 +220,59 @@ Roadmap
 [ ] Packager le bridge MCP comme module PyPI réutilisable
 [ ] Plateforme de formation avec suivi de progression
 
-Contribuer
-Les contributions sont les bienvenues ! Voici comment participer :
+🤝 Contribuer
+Les contributions sont les bienvenues !
 Signaler un bug
-Ouvrez une issue avec :
+Ouvre une issue avec :
 Description du problème
 Étapes pour reproduire
 Logs d'erreur (si applicable)
 Environnement (VPS, version Docker, etc.)
 Proposer une amélioration
-Forkez le repo
-Créez une branche pour votre feature (git checkout -b feature/amelioration)
-Commitez vos changements (git commit -am 'Ajout de X')
-Pushez vers la branche (git push origin feature/amelioration)
-Ouvrez une Pull Request
+# 1. Fork le repo
+# 2. Créer une branche
+git checkout -b feature/amelioration
+
+# 3. Commiter les changements
+git commit -am "Ajout de X"
+
+# 4. Pusher la branche
+git push origin feature/amelioration
+
+# 5. Ouvrir une Pull Request
 Ajouter une entrée au journal
-Si vous avez reproduit l'installation ou ajouté une fonctionnalité, partagez votre expérience :
-Créez un fichier journal/YYYY-MM-DD-titre-session.md
-Suivez le format du journal existant
-Ouvrez une Pull Request
+Si tu as reproduit l'installation ou ajouté une fonctionnalité :
+Crée un fichier journal/YYYY-MM-DD-titre-session.md
+Suis le format du journal existant
+Ouvre une Pull Request
 
-Ressources
-Liens utiles
-Spécification MCP : modelcontextprotocol.io
-SDK MCP Python : github.com/modelcontextprotocol/python-sdk
-Documentation socat : dest-unreach.org/socat
-Hermes Agent : Documentation officielle
-Communauté
-Discussions : GitHub Discussions
-Issues : GitHub Issues
+📖 Ressources
+Documentation officielle
+🔗 Spécification MCP : modelcontextprotocol.io
+🔗 SDK MCP Python : github.com/modelcontextprotocol/python-sdk
+🔗 Documentation socat : dest-unreach.org/socat
+🔗 Anthropic Claude : docs.anthropic.com
+Projets liés
+🔗 hermes-skills-autopilot : github.com/DrFIRASS/hermes-skills-autopilot
 
-Licence
+📄 Licence
 Ce projet est sous licence MIT — voir le fichier LICENSE pour plus de détails.
-Vous êtes libre de :
+Tu es libre de :
 ✅ Utiliser le code à des fins personnelles ou commerciales
 ✅ Modifier et adapter le code
 ✅ Distribuer le code original ou modifié
 À condition de :
 ⚖️ Inclure la notice de copyright et de licence
-📄 Mentionner les modifications apportées
+📝 Mentionner les modifications apportées
 
-Auteur
-Dr. FIRAS (DrAzkalix)
-PhD en IA • Formateur Udemy • Créateur YouTube
-GitHub: @DrAzkalix
-Projet formation : hermes-skills-autopilot
+👤 Auteur
+Dr. Azkalix
+🔗 GitHub : @DrAzkalix
 
-Remerciements
+🙏 Remerciements
 Anthropic pour Claude et le protocole MCP
 OpenAI pour l'API compatible utilisée par OpenClaw
 Hostinger pour la plateforme VPS avec Docker Manager
 La communauté MCP pour les ressources et exemples
 
-Dernière mise à jour : Avril 2026
-Version : 1.0.0
-Statut : Infrastructure opérationnelle ✅
+**Dernière mise à jour :** Avril 2026 · **Version :** 1.0.0 · **Statut :** ✅ Opérationnel ⭐ **Si ce projet te plaît, n'hésite pas à lui mettre une étoile !** ⭐ 
