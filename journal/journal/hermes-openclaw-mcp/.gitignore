@@ -1,0 +1,11 @@
+.env
+.env.*
+*.log
+*.tmp
+*.bak
+__pycache__/
+*.pyc
+secrets.txt
+token.txt
+openclaw_bridge.sh
+openclaw.json
