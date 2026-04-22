@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export OPENCLAW_API_KEY="VOTRE_TOKEN_ICI"
+export OPENCLAW_BASE_URL="http://VOTRE_OPENCLAW:18790/v1"
+export OPENCLAW_MODEL="openclaw/main"
+
+exec /opt/hermes/.venv/bin/python3 /opt/data/openclaw_bridge.py
